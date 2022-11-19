@@ -30,8 +30,8 @@
 # (If you are into this style of puzzle, also check out my [Tensor
 # Puzzles](https://github.com/srush/Tensor-Puzzles) for PyTorch.)
 
-!pip install -qqq git+https://github.com/danoneata/chalk@srush-patch-1
-!wget -q https://github.com/srush/GPU-Puzzles/raw/main/robot.png https://github.com/srush/GPU-Puzzles/raw/main/lib.py
+# !pip install -qqq git+https://github.com/danoneata/chalk@srush-patch-1
+# !wget -q https://github.com/srush/GPU-Puzzles/raw/main/robot.png https://github.com/srush/GPU-Puzzles/raw/main/lib.py
 
 
 import numba
@@ -72,6 +72,7 @@ def map_test(cuda):
     def call(out, a) -> None:
         local_i = cuda.threadIdx.x
         # FILL ME IN (roughly 1 lines)
+        out[local_i] = a[local_i] + 10
 
     return call
 
@@ -102,6 +103,7 @@ def zip_test(cuda):
     def call(out, a, b) -> None:
         local_i = cuda.threadIdx.x
         # FILL ME IN (roughly 1 lines)
+        out[local_i] = a[local_i] + b[local_i]
 
     return call
 
@@ -130,6 +132,8 @@ def map_guard_test(cuda):
     def call(out, a, size) -> None:
         local_i = cuda.threadIdx.x
         # FILL ME IN (roughly 2 lines)
+        if local_i < size:
+            out[local_i] = a[local_i] + 10
 
     return call
 
@@ -163,6 +167,8 @@ def map_2D_test(cuda):
         local_i = cuda.threadIdx.x
         local_j = cuda.threadIdx.y
         # FILL ME IN (roughly 2 lines)
+        if local_i < size and local_j < size:
+            out[local_j, local_i] = a[local_j, local_i] + 10
 
     return call
 
@@ -190,6 +196,8 @@ def broadcast_test(cuda):
         local_i = cuda.threadIdx.x
         local_j = cuda.threadIdx.y
         # FILL ME IN (roughly 2 lines)
+        if local_i < size and local_j < size:
+            out[local_j, local_i] = a[local_i, 0] + b[0, local_j]
 
     return call
 
@@ -226,6 +234,8 @@ def map_block_test(cuda):
     def call(out, a, size) -> None:
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
         # FILL ME IN (roughly 2 lines)
+        if i < size:
+            out[i] = a[i] + 10
 
     return call
 
@@ -259,6 +269,9 @@ def map_block2D_test(cuda):
     def call(out, a, size) -> None:
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
         # FILL ME IN (roughly 4 lines)
+        j = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
+        if i < size and j < size:
+            out[j, i] = a[j, i] + 10
 
     return call
 
@@ -309,6 +322,8 @@ def shared_test(cuda):
             cuda.syncthreads()
 
         # FILL ME IN (roughly 2 lines)
+        if i < size:
+            out[i] = shared[local_i]
 
     return call
 
@@ -354,6 +369,15 @@ def pool_test(cuda):
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
         local_i = cuda.threadIdx.x
         # FILL ME IN (roughly 8 lines)
+        if i < size:
+            if i > 1:
+                shared[local_i] = a[i] + a[i-1] + a[i-2]
+            elif i > 0:
+                shared[local_i] = a[i] + a[i-1]
+            else:
+                shared[local_i] = a[i]
+            cuda.syncthreads()
+            out[i] = shared[local_i]
 
     return call
 
