@@ -318,7 +318,7 @@ def shared_test(cuda):
         local_i = cuda.threadIdx.x
 
         if i < size:
-            shared[local_i] = a[i]
+            shared[local_i] = a[i] + 10
             cuda.syncthreads()
 
         # FILL ME IN (roughly 2 lines)
@@ -421,6 +421,16 @@ def dot_test(cuda):
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
         local_i = cuda.threadIdx.x
         # FILL ME IN (roughly 9 lines)
+        if i < size:
+            shared[local_i] = a[i] * b[i]
+        
+        cuda.syncthreads()
+        if i == 0:
+            local = 0
+            for idx in range(size):
+                local += shared[idx]
+            out[i] = local
+
     return call
 
 
@@ -468,6 +478,22 @@ def conv_test(cuda):
         local_i = cuda.threadIdx.x
 
         # FILL ME IN (roughly 17 lines)
+        shared = cuda.shared.array((TPB_MAX_CONV), numba.float32)
+        shared_b = cuda.shared.array((MAX_CONV), numba.float32)
+        if i < a_size:
+            shared[local_i] = a[i]
+
+        if local_i < b_size and TPB + i < a_size:
+            shared[TPB + local_i] = a[TPB + i]
+        elif b_size <= local_i < 2 * b_size:
+            shared_b[local_i - b_size] = b[local_i - b_size]
+
+        cuda.syncthreads()
+        if i < a_size:
+            local = 0
+            for j in range(b_size):
+                local += shared[local_i + j] * shared_b[j]
+            out[i] = local
 
     return call
 
