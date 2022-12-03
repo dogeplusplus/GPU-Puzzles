@@ -33,7 +33,7 @@
 # !pip install -qqq git+https://github.com/danoneata/chalk@srush-patch-1
 # !wget -q https://github.com/srush/GPU-Puzzles/raw/main/robot.png https://github.com/srush/GPU-Puzzles/raw/main/lib.py
 
-
+import math
 import numba
 import numpy as np
 import warnings
@@ -571,6 +571,24 @@ def sum_test(cuda):
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
         local_i = cuda.threadIdx.x
         # FILL ME IN (roughly 12 lines)
+        if i < size:
+            cache[local_i] = a[i]
+
+            cuda.syncthreads()
+            pow = int(math.ceil(math.log2(TPB)))
+            for k in range(pow):
+                if local_i >= 2 ** k:
+                    cache[local_i] = cache[local_i] + cache[local_i - 2 ** k]
+                else:
+                    cache[local_i] = cache[local_i]
+            
+                cuda.syncthreads()
+
+            cuda.syncthreads()
+            if i == size - 1:
+                out[cuda.blockIdx.x] = cache[(size - 1) % TPB]
+            elif local_i == TPB - 1 and i < size:
+                out[cuda.blockIdx.x] = cache[TPB - 1]
 
     return call
 
