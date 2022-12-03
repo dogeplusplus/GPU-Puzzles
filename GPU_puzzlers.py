@@ -656,6 +656,14 @@ def axis_sum_test(cuda):
         local_i = cuda.threadIdx.x
         batch = cuda.blockIdx.y
         # FILL ME IN (roughly 12 lines)
+        if i < size:
+            cache[local_i] = a[batch, i]
+
+        cuda.syncthreads()
+        total = 0
+        for idx in range(TPB):
+            total += cache[idx]
+        out[batch, 0] = total
 
     return call
 
