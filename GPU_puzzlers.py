@@ -717,6 +717,30 @@ def mm_oneblock_test(cuda):
         local_i = cuda.threadIdx.x
         local_j = cuda.threadIdx.y
         # FILL ME IN (roughly 14 lines)
+        if i >= size and j >= size:
+            return
+    
+        tmp = 0
+        bpg = int(math.ceil(size / cuda.blockDim.x))
+
+        for k in range(bpg):
+            if j < size and local_i + k * TPB < size:
+                a_shared[local_j, local_i] = a[j, local_i + k * TPB]
+            else:
+                a_shared[local_j, local_i] = 0.
+            if i < size and local_j + k * TPB < size:
+                b_shared[local_j, local_i] = b[local_j + k * TPB, i]
+            else:
+                b_shared[local_j, local_i] = 0.
+
+            cuda.syncthreads()
+            for w in range(TPB):
+                tmp += a_shared[local_j, w] * b_shared[w, local_i]
+    
+        cuda.syncthreads()
+        if i < size and j < size:
+            out[j, i] = tmp
+
 
     return call
 
